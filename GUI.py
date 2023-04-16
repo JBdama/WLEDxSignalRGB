@@ -20,36 +20,40 @@ class Application(tk.Frame):
         self.inputs_frame.grid(row=1, column=1, pady=10)
         
         # Create an entry for the user to input the IP address
-        self.ip_entry = tk.Entry(self.inputs_frame)
-        self.ip_entry.insert(1, "192.168.178.25")
-        self.ip_entry.grid(row=0, column=1, padx=10, pady=10)
+        self.ip_entry_var = tk.StringVar(value="192.168.178.25")
+        self.ip_entry = tk.Entry(self.inputs_frame, textvariable=self.ip_entry_var)
         self.ip_label = tk.Label(self.inputs_frame, text="IP address:")
+
+        self.ip_entry.grid(row=0, column=1, padx=10, pady=10)
         self.ip_label.grid(row=0, column=0, padx=10, pady=10)
 
         # Create an entry for the user to input the UDP port
-        self.port_entry = tk.Entry(self.inputs_frame)
-        self.port_entry.insert(1, "21324")
-        self.port_entry.grid(row=1, column=1, padx=10, pady=10)
+        self.port_entry_var = tk.StringVar(value="21324")        
+        self.port_entry = tk.Entry(self.inputs_frame, textvariable=self.port_entry_var)
         self.port_label = tk.Label(self.inputs_frame, text="Port:")
-        self.port_label.grid(row=1, column=0, padx=10, pady=10)
         self.port_test_button = tk.Button(self.inputs_frame, text="Test UDP", command=self.test_udp)
+
+        self.port_entry.grid(row=1, column=1, padx=10, pady=10)
+        self.port_label.grid(row=1, column=0, padx=10, pady=10)
         self.port_test_button.grid(row=1, column=2, padx=10, pady=10)
 
         # Create an option menu for the user to select the LED count
+        self.led_count_var = tk.StringVar(value="60")
         self.led_count_label = tk.Label(self.inputs_frame, text="LED Count:")
+        self.led_count_entry = tk.Entry(self.inputs_frame, textvariable=self.led_count_var)
+
         self.led_count_label.grid(row=2, column=0, padx=10, pady=10)
-        self.led_count_entry = tk.Entry(self.inputs_frame)
-        self.led_count_entry.insert(1, "60")
         self.led_count_entry.grid(row=2, column=1, padx=10, pady=10)
 
         # Create an option menu for the user to select the com port
         self.coms_label = tk.Label(self.inputs_frame, text="COM Port:")
-        self.coms_label.grid(row=3, column=0, padx=10, pady=10)
-        self.coms_var = tk.StringVar(value="No Port Selected")
+        self.coms_var = tk.StringVar(value="No Port Available")
         self.coms_menu = tk.OptionMenu(self.inputs_frame, self.coms_var, *self.coms, command=self.set_coms)
+        self.refresh_button = tk.Button(self.inputs_frame, text="Refresh", command=self.refresh)
+
+        self.coms_label.grid(row=3, column=0, padx=10, pady=10)
         self.coms_menu.config(width=15, anchor="w")
         self.coms_menu.grid(row=3, column=1, padx=10, pady=10)
-        self.refresh_button = tk.Button(self.inputs_frame, text="Refresh", command=self.refresh)
         self.refresh_button.grid(row=3, column=2)
 
         # Create a button to start/stop the program
@@ -71,24 +75,29 @@ class Application(tk.Frame):
     def set_coms(self, coms):
         self.coms = coms
 
+
     # Initializes the controller and disables the inputs
     def init_controller(self):
-        self.controller.set_serial(self.coms_var.get())
-        self.controller.set_transmitter(self.port_entry.get(), self.ip_entry.get())
-        self.controller.start()
+        self.init2()
         for widget in self.input_widgets:
             widget["state"] = "disabled"
 
-    # Stops the controller, toggles the start/stop button, and enables the inputs
+    # Tests the UDP connection
+    def test_udp(self):
+        self.init2()
+        self.controller.test_udp()
+
+    def init2(self):
+        if self.coms_var.get() != "No Port Available":
+            self.controller.set_serial(self.coms_var.get())
+        self.controller.set_transmitter(self.port_entry_var.get(), self.ip_entry_var.get())
+        self.controller.set_led_count(self.led_count_var.get())
+
+    # Stops the controller and enables the inputs
     def stop(self):
         self.controller.stop()
         for widget in self.input_widgets:
             widget["state"] = "normal"
-
-    # Tests the UDP connection
-    def test_udp(self):
-        self.controller.set_transmitter(self.port_entry.get(), self.ip_entry.get())
-        self.controller.test_udp()
 
     # Refreshes the coms menu
     def refresh(self):
@@ -99,6 +108,7 @@ class Application(tk.Frame):
                 print(port)
             if (len(new_ports) == 0):
                 print("No Port Available")
+                self.coms_var.set("No Port Available")
             for com in new_ports:
                 self.coms_menu["menu"].add_command(label=com, command=tk._setit(self.coms_var, com))
                 self.coms_var.set(com)

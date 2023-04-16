@@ -18,8 +18,7 @@ class Transmitter:
         print (''.join('{:02x}'.format(x) for x in package))
         self.socket.sendto(package, (self.IP, self.UDP_port))
 
-    def test_udp(self):
-            length = 56
+    def test_udp(self, length):
             for i in range(0, length):
                 package = bytearray([2, 2])
                 for j in range(0, length):
